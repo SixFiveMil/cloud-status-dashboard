@@ -34,6 +34,7 @@ export const PROVIDERS: ProviderConfig[] = [
   { id: 'gitlab', name: 'GitLab', link: 'https://status.gitlab.com/', category: 'saas' },
   { id: 'atlassian', name: 'Atlassian', link: 'https://status.atlassian.com/', category: 'saas' },
   { id: 'datadog', name: 'Datadog', link: 'https://status.datadoghq.com/', category: 'saas' },
+  { id: 'duo', name: 'Duo', link: 'https://status.duo.com/', category: 'saas' },
   { id: 'twilio', name: 'Twilio', link: 'https://status.twilio.com/', category: 'saas' },
   { id: 'slack', name: 'Slack', link: 'https://slack-status.com/', category: 'saas' },
   { id: 'splunk', name: 'Splunk Cloud Platform', link: 'https://status.splunkcloud.com/', category: 'saas' },
@@ -45,6 +46,7 @@ export const PROVIDERS: ProviderConfig[] = [
     link: 'https://status.cloud.google.com/products/Z0FZJAMvEB4j3NbCJs6B/history',
     category: 'saas',
   },
+  { id: 'o365', name: 'Microsoft 365', link: 'https://status.office.com/', category: 'saas' },
   { id: 'openai', name: 'OpenAI', link: 'https://status.openai.com/', category: 'saas' },
 ];
 
