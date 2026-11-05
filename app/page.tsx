@@ -16,12 +16,17 @@ import { StatusSkeleton } from '@/components/status-skeleton';
 import { PageHeader } from '@/components/page-header';
 import { STATUS_GRID_DESKTOP_COLUMNS } from '@/components/status-grid-layout';
 import {
-  CLIENT_REFRESH_MS,
   getProviderConfig,
   getProvidersByCategory,
   PROVIDER_CATEGORIES,
   PROVIDERS,
 } from '@/lib/status/constants';
+import {
+  formatRefreshIntervalLabel,
+  readDashboardMonitoringPreferences,
+  REFRESH_INTERVAL_OPTIONS_MS,
+  RefreshIntervalOptionMs,
+} from '@/lib/status/preferences';
 import { ProviderCategory, ProviderStatus, NormalizedStatus } from '@/lib/status/types';
 
 type CategoryFilter = 'all' | ProviderCategory;
@@ -207,13 +212,25 @@ export default function Home() {
   const [activeCategory, setActiveCategory] = useState<CategoryFilter>('all');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const [selectedProviderIds, setSelectedProviderIds] = useState<string[]>([]);
+  const [monitoringProviderIds, setMonitoringProviderIds] = useState<string[]>([]);
+  const [refreshIntervalMs, setRefreshIntervalMs] = useState<RefreshIntervalOptionMs>(
+    REFRESH_INTERVAL_OPTIONS_MS[1]
+  );
   const [isServiceFilterOpen, setIsServiceFilterOpen] = useState(false);
   const [preferencesHydrated, setPreferencesHydrated] = useState(false);
+  const [monitoringPreferencesHydrated, setMonitoringPreferencesHydrated] = useState(false);
   const deferredQuery = useDeferredValue(query);
 
-  const fetchCategoryStatuses = useCallback(async (category: ProviderCategory) => {
+  const fetchCategoryStatuses = useCallback(
+    async (category: ProviderCategory, monitoredProviderIds: string[]) => {
     try {
-      const response = await fetch(`/api/status?category=${category}`, { cache: 'no-store' });
+      const queryParams = new URLSearchParams({ category });
+
+      if (monitoredProviderIds.length > 0) {
+        queryParams.set('providers', monitoredProviderIds.join(','));
+      }
+
+      const response = await fetch(`/api/status?${queryParams.toString()}`, { cache: 'no-store' });
 
       if (!response.ok) {
         throw new Error('Failed to fetch status');
@@ -221,7 +238,7 @@ export default function Home() {
 
       const data = (await response.json()) as NormalizedStatus[];
 
-      if (!Array.isArray(data) || data.length === 0) {
+      if (!Array.isArray(data)) {
         throw new Error('Status data is temporarily unavailable');
       }
 
@@ -242,23 +259,60 @@ export default function Home() {
         [category]: err instanceof Error ? err.message : 'An error occurred',
       }));
     }
-  }, []);
+    },
+    []
+  );
 
   const fetchStatuses = useCallback(async () => {
-    await Promise.allSettled(
-      PROVIDER_CATEGORIES.map(({ id }) => fetchCategoryStatuses(id))
-    );
-  }, [fetchCategoryStatuses]);
+    await Promise.allSettled(PROVIDER_CATEGORIES.map(({ id }) => fetchCategoryStatuses(id, monitoringProviderIds)));
+  }, [fetchCategoryStatuses, monitoringProviderIds]);
 
   useEffect(() => {
+    const monitoringPreferences = readDashboardMonitoringPreferences();
+
+    if (monitoringPreferences) {
+      setMonitoringProviderIds(monitoringPreferences.monitoredProviderIds);
+      setRefreshIntervalMs(monitoringPreferences.refreshIntervalMs);
+    }
+
+    setMonitoringPreferencesHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!monitoringPreferencesHydrated) {
+      return;
+    }
+
+    setCategoryStatuses(INITIAL_CATEGORY_STATUSES);
     void fetchStatuses();
 
     const interval = setInterval(() => {
       void fetchStatuses();
-    }, CLIENT_REFRESH_MS);
+    }, refreshIntervalMs);
 
     return () => clearInterval(interval);
-  }, [fetchStatuses]);
+  }, [fetchStatuses, monitoringPreferencesHydrated, refreshIntervalMs]);
+
+  useEffect(() => {
+    if (!monitoringPreferencesHydrated) {
+      return;
+    }
+
+    if (monitoringProviderIds.length === 0) {
+      return;
+    }
+
+    const monitoredProviderIdSet = new Set(monitoringProviderIds);
+    setSelectedProviderIds((current) => current.filter((providerId) => monitoredProviderIdSet.has(providerId)));
+  }, [monitoringPreferencesHydrated, monitoringProviderIds]);
+
+  useEffect(() => {
+    if (!monitoringPreferencesHydrated) {
+      return;
+    }
+
+    setCategoryErrors({});
+  }, [monitoringPreferencesHydrated, monitoringProviderIds]);
 
   useEffect(() => {
     const savedPreferences = readDashboardFilterPreferences();
@@ -284,6 +338,8 @@ export default function Home() {
     });
   }, [activeCategory, preferencesHydrated, selectedProviderIds, statusFilter]);
 
+  const monitoredProviderIdSet =
+    monitoringProviderIds.length > 0 ? new Set(monitoringProviderIds) : null;
   const selectedProviderIdSet =
     selectedProviderIds.length > 0 ? new Set(selectedProviderIds) : null;
   const statuses = PROVIDER_CATEGORIES.flatMap((category) => categoryStatuses[category.id] ?? []);
@@ -295,9 +351,19 @@ export default function Home() {
   const normalizedQuery = deferredQuery.trim().toLowerCase();
   const serviceScopedProviders = (
     activeCategory === 'all' ? PROVIDERS : getProvidersByCategory(activeCategory)
-  ).filter((provider) => !selectedProviderIdSet || selectedProviderIdSet.has(provider.id));
+  ).filter((provider) => {
+    if (monitoredProviderIdSet && !monitoredProviderIdSet.has(provider.id)) {
+      return false;
+    }
+
+    return !selectedProviderIdSet || selectedProviderIdSet.has(provider.id);
+  });
   const serviceScopedStatuses = statuses.filter((status) => {
     const provider = getProviderConfig(status.id);
+
+    if (monitoredProviderIdSet && !monitoredProviderIdSet.has(status.id)) {
+      return false;
+    }
 
     if (activeCategory !== 'all' && provider.category !== activeCategory) {
       return false;
@@ -322,10 +388,16 @@ export default function Home() {
     }
 
     if (!selectedProviderIdSet) {
-      return true;
+      return getProvidersByCategory(category).some(
+        (provider) => !monitoredProviderIdSet || monitoredProviderIdSet.has(provider.id)
+      );
     }
 
-    return getProvidersByCategory(category).some((provider) => selectedProviderIdSet.has(provider.id));
+    return getProvidersByCategory(category).some(
+      (provider) =>
+        (!monitoredProviderIdSet || monitoredProviderIdSet.has(provider.id)) &&
+        selectedProviderIdSet.has(provider.id)
+    );
   });
   const pendingProviderCount = PROVIDER_CATEGORIES.reduce((total, category) => {
     if (categoryStatuses[category.id] !== null) {
@@ -339,7 +411,9 @@ export default function Home() {
     return (
       total +
       getProvidersByCategory(category.id).filter(
-        (provider) => !selectedProviderIdSet || selectedProviderIdSet.has(provider.id)
+        (provider) =>
+          (!monitoredProviderIdSet || monitoredProviderIdSet.has(provider.id)) &&
+          (!selectedProviderIdSet || selectedProviderIdSet.has(provider.id))
       ).length
     );
   }, 0);
@@ -356,7 +430,9 @@ export default function Home() {
       : PROVIDER_CATEGORIES.filter((category) => category.id === activeCategory)
   ).map((category) => ({
     ...category,
-    providers: getProvidersByCategory(category.id),
+    providers: getProvidersByCategory(category.id).filter(
+      (provider) => !monitoredProviderIdSet || monitoredProviderIdSet.has(provider.id)
+    ),
   }));
 
   const toggleStatusFilter = (nextFilter: StatusFilter) => {
@@ -541,6 +617,12 @@ export default function Home() {
           )}
 
           <div className="mt-5 flex flex-wrap gap-3">
+            <div className="inline-flex items-center gap-2 rounded-full border border-sky-300/15 bg-sky-300/10 px-4 py-2 text-sm text-sky-100">
+              Refresh {formatRefreshIntervalLabel(refreshIntervalMs)}
+            </div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-(--panel-border) bg-(--toolbar) px-4 py-2 text-sm text-(--subtle)">
+              Monitoring {monitoringProviderIds.length > 0 ? monitoringProviderIds.length : PROVIDERS.length} providers
+            </div>
             <button
               type="button"
               onClick={() => {

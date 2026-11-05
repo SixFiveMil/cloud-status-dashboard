@@ -2,10 +2,10 @@
 
 [![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js)](https://nextjs.org/)
 [![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white)](https://hub.docker.com/repository/docker/dmitryporotnikov/status-dashboard)
-[![Providers](https://img.shields.io/badge/providers-27-blue)](lib/status/providers)
+[![Providers](https://img.shields.io/badge/providers-30-blue)](lib/status/providers)
 [![Docker build](https://github.com/dmitryporotnikov/cloud-status-dashboard/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/dmitryporotnikov/cloud-status-dashboard/actions/workflows/docker-publish.yml)
 
-One page that answers "is anything broken right now" across 27 providers. The server fetches their status pages every five minutes, normalizes the different formats into one model, and renders the result as two groups of cards, infrastructure and SaaS.
+One page that answers "is anything broken right now" across 30 providers. The server fetches their status pages every five minutes, normalizes the different formats into one model, and renders the result as two groups of cards, infrastructure and SaaS.
 
 Your browser only talks to your own deployment. Provider requests happen server-side, so a busy team doesn't burn through someone else's rate limit.
 
@@ -15,7 +15,16 @@ Your browser only talks to your own deployment. Provider requests happen server-
 
 Infrastructure: AWS, Microsoft Azure, Google Cloud Platform, IBM Cloud, Oracle Cloud, Alibaba Cloud, DigitalOcean, Cloudflare, OVHcloud, Vultr, Linode, Akamai, Vercel, Heroku, MongoDB Cloud, UpCloud.
 
-SaaS: GitHub, GitLab, Atlassian, Datadog, Twilio, Slack, Splunk Cloud Platform, Salesforce, Claude, Gemini, OpenAI.
+SaaS: GitHub, GitLab, Atlassian, Datadog, Duo, Twilio, Slack, Splunk Cloud Platform, Salesforce, Claude, Gemini, Microsoft 365, OpenAI, Workday.
+
+### Workday configuration
+
+Workday's status API is behind authentication. To fetch Workday status automatically, configure at least one of these server-side environment variables:
+
+- `WORKDAY_STATUS_COOKIE` (raw `Cookie` header value from an authenticated Workday session)
+- `WORKDAY_STATUS_AUTHORIZATION` (raw `Authorization` header value if your org exposes token-based access)
+
+If neither is set, Workday is shown as **Requires manual check**.
 
 ## Run it locally
 
@@ -25,6 +34,15 @@ npm run dev
 ```
 
 Open http://localhost:3000.
+
+## Dashboard configuration
+
+Open `/settings` to configure:
+
+- Which providers are monitored (empty selection = monitor all providers)
+- Automatic refresh interval (1, 5, 15, or 30 minutes)
+
+These preferences are saved in your browser and applied on the main dashboard.
 
 ## Production build
 
