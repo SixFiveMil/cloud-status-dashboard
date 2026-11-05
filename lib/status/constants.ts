@@ -48,6 +48,7 @@ export const PROVIDERS: ProviderConfig[] = [
   },
   { id: 'o365', name: 'Microsoft 365', link: 'https://status.office.com/', category: 'saas' },
   { id: 'openai', name: 'OpenAI', link: 'https://status.openai.com/', category: 'saas' },
+  { id: 'workday', name: 'Workday', link: 'https://status.workday.com/', category: 'saas' },
 ];
 
 export const CACHE_REVALIDATE_SECONDS = 300;

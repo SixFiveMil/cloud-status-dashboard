@@ -103,14 +103,15 @@ function getIncidentStatus(entry: StatuspageEntry): ProviderStatus {
 
 export async function fetchStatuspageSummaryStatus(
   providerId: string,
-  summaryUrl: string
+  summaryUrl: string,
+  init: RequestInit = {}
 ): Promise<NormalizedStatus> {
   const config = getProviderConfig(providerId);
 
   try {
     const response = await fetchJsonWithTimeout<StatuspageSummaryResponse>(
       summaryUrl,
-      {},
+      init,
       PROVIDER_TIMEOUT_MS
     );
     const activeIncidents = sortStatuspageEntries(

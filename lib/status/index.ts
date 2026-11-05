@@ -28,6 +28,7 @@ import { fetchGeminiStatus } from './providers/gemini';
 import { fetchDuoStatus } from './providers/duo';
 import { fetchO365Status } from './providers/o365';
 import { fetchOpenAIStatus } from './providers/openai';
+import { fetchWorkdayStatus } from './providers/workday';
 import { getProviderConfig, getProvidersByCategory } from './constants';
 import { createUnknownStatus } from './normalize';
 import { ProviderCategory } from './types';
@@ -61,6 +62,7 @@ export { fetchGeminiStatus } from './providers/gemini';
 export { fetchDuoStatus } from './providers/duo';
 export { fetchO365Status } from './providers/o365';
 export { fetchOpenAIStatus } from './providers/openai';
+export { fetchWorkdayStatus } from './providers/workday';
 export { CACHE_REVALIDATE_SECONDS } from './constants';
 
 const PROVIDER_FETCHERS = [
@@ -93,6 +95,7 @@ const PROVIDER_FETCHERS = [
   { config: getProviderConfig('duo'), fetcher: fetchDuoStatus },
   { config: getProviderConfig('o365'), fetcher: fetchO365Status },
   { config: getProviderConfig('openai'), fetcher: fetchOpenAIStatus },
+  { config: getProviderConfig('workday'), fetcher: fetchWorkdayStatus },
 ] as const;
 
 export async function fetchProviderStatuses(
