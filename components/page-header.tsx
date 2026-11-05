@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 
 interface PageHeaderProps {
   lastUpdated: Date | null;
@@ -44,19 +45,27 @@ export function PageHeader({ lastUpdated }: PageHeaderProps) {
         </p>
       </div>
 
-      {formattedLastUpdated && (
-        <div className="inline-flex items-center gap-3 self-start rounded-full border border-(--panel-border) bg-(--toolbar) px-4 py-2 text-xs uppercase tracking-[0.24em] text-(--muted) lg:self-auto">
-          <span
-            className={`h-2.5 w-2.5 rounded-full ${
-              ledShouldBeRed
-                ? 'bg-rose-400 shadow-[0_0_16px_rgba(251,113,133,0.7)]'
-                : 'bg-sky-300 shadow-[0_0_16px_rgba(123,208,255,0.65)]'
-            }`}
-          ></span>
-          Last Refreshed
-          <span className="normal-case tracking-normal text-white">{formattedLastUpdated}</span>
-        </div>
-      )}
+      <div className="flex flex-col items-start gap-3 self-start lg:items-end lg:self-auto">
+        <Link
+          href="/settings"
+          className="inline-flex items-center rounded-full border border-(--panel-border) bg-(--toolbar) px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-(--muted) transition hover:border-white/20 hover:text-white focus:outline-none focus:ring-2 focus:ring-(--focus-ring)"
+        >
+          Configuration
+        </Link>
+        {formattedLastUpdated && (
+          <div className="inline-flex items-center gap-3 rounded-full border border-(--panel-border) bg-(--toolbar) px-4 py-2 text-xs uppercase tracking-[0.24em] text-(--muted)">
+            <span
+              className={`h-2.5 w-2.5 rounded-full ${
+                ledShouldBeRed
+                  ? 'bg-rose-400 shadow-[0_0_16px_rgba(251,113,133,0.7)]'
+                  : 'bg-sky-300 shadow-[0_0_16px_rgba(123,208,255,0.65)]'
+              }`}
+            ></span>
+            Last Refreshed
+            <span className="normal-case tracking-normal text-white">{formattedLastUpdated}</span>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

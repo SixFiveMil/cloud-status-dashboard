@@ -26,6 +26,15 @@ npm run dev
 
 Open http://localhost:3000.
 
+## Dashboard configuration
+
+Open `/settings` to configure:
+
+- Which providers are monitored (empty selection = monitor all providers)
+- Automatic refresh interval (1, 5, 15, or 30 minutes)
+
+These preferences are saved in your browser and applied on the main dashboard.
+
 ## Production build
 
 ```bash
